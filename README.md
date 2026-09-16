@@ -20,9 +20,12 @@ Ollama 127.0.0.1:11434 → 你的 27b 模型
 ```bash
 git clone https://github.com/niuroumiantt/openapi.git
 cd openapi
-pip install -r requirements.txt
+uv venv && source .venv/bin/activate      # 没装 uv 的话：python3 -m venv .venv && source .venv/bin/activate
+uv pip install -r requirements.txt        # 或 python -m pip install -r requirements.txt
 GATEWAY_MODEL=qwen3.8:27b-mxfp8 python -m gateway.app
 ```
+
+以后每次启动只需要 `source .venv/bin/activate` 和最后一行。
 
 浏览器打开 `http://127.0.0.1:8800`。右上角绿点表示 Ollama 已连接。
 
@@ -69,7 +72,7 @@ print(resp.choices[0].message.content)
 ## 测试
 
 ```bash
-pip install -r requirements-dev.txt
+uv pip install -r requirements-dev.txt
 python -m pytest
 ```
 
