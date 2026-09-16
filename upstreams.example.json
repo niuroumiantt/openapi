@@ -1,0 +1,12 @@
+{
+  "upstreams": {
+    "local":    {"base_url": "http://127.0.0.1:11434/v1"},
+    "deepseek": {"base_url": "https://api.deepseek.com/v1", "api_key_env": "DEEPSEEK_API_KEY"},
+    "qwen":     {"base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "api_key_env": "DASHSCOPE_API_KEY"}
+  },
+  "models": {
+    "semifly-27b":   {"upstream": "local",    "model": "qwen3.8:27b-mxfp8", "weight": 1},
+    "deepseek-chat": {"upstream": "deepseek", "model": "deepseek-chat",     "weight": 2},
+    "qwen-plus":     {"upstream": "qwen",     "model": "qwen-plus",         "weight": 4}
+  }
+}

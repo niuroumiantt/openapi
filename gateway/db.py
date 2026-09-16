@@ -1,5 +1,6 @@
 """SQLite storage for API keys. Only key hashes are stored, never the raw key."""
 import hashlib
+import json
 import secrets
 import sqlite3
 import time
@@ -17,7 +18,8 @@ CREATE TABLE IF NOT EXISTS keys (
     token_limit INTEGER,                      -- only for kind='tokens'
     tokens_used INTEGER NOT NULL DEFAULT 0,
     requests    INTEGER NOT NULL DEFAULT 0,
-    revoked     INTEGER NOT NULL DEFAULT 0
+    revoked     INTEGER NOT NULL DEFAULT 0,
+    models      TEXT    NOT NULL DEFAULT '*'   -- JSON list of allowed public model names, or '*'
 );
 """
 
@@ -31,6 +33,9 @@ class KeyStore:
         self.path = path
         with self._conn() as c:
             c.executescript(SCHEMA)
+            cols = {r["name"] for r in c.execute("PRAGMA table_info(keys)")}
+            if "models" not in cols:  # upgrade a v1 database in place
+                c.execute("ALTER TABLE keys ADD COLUMN models TEXT NOT NULL DEFAULT '*'")
 
     @contextmanager
     def _conn(self):
@@ -44,7 +49,8 @@ class KeyStore:
     # ---- create / list / revoke -------------------------------------------------
 
     def create(self, kind: str, *, minutes: int | None = None,
-               tokens: int | None = None, label: str = "") -> tuple[str, dict]:
+               tokens: int | None = None, label: str = "",
+               models: list[str] | None = None) -> tuple[str, dict]:
         if kind == "time":
             if not minutes or minutes <= 0:
                 raise ValueError("minutes must be > 0")
@@ -59,9 +65,10 @@ class KeyStore:
         raw = "sk-local-" + secrets.token_urlsafe(32)
         with self._conn() as c:
             cur = c.execute(
-                "INSERT INTO keys (key_hash, prefix, label, kind, created_at, expires_at, token_limit)"
-                " VALUES (?,?,?,?,?,?,?)",
-                (hash_key(raw), raw[:14], label, kind, time.time(), expires_at, token_limit),
+                "INSERT INTO keys (key_hash, prefix, label, kind, created_at, expires_at, token_limit, models)"
+                " VALUES (?,?,?,?,?,?,?,?)",
+                (hash_key(raw), raw[:14], label, kind, time.time(), expires_at, token_limit,
+                 json.dumps(sorted(models)) if models else "*"),
             )
             row = c.execute("SELECT * FROM keys WHERE id=?", (cur.lastrowid,)).fetchone()
         return raw, self._view(row)
@@ -96,6 +103,7 @@ class KeyStore:
     def _view(row: sqlite3.Row) -> dict:
         d = dict(row)
         d.pop("key_hash", None)
+        d["models"] = "*" if d["models"] == "*" else json.loads(d["models"])
         now = time.time()
         if d["revoked"]:
             status = "revoked"

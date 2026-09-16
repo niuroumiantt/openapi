@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 
 app = FastAPI()
+seen_auth: list[str] = []
 
 
 @app.get("/api/tags")
@@ -20,6 +21,7 @@ async def models():
 @app.post("/v1/chat/completions")
 async def chat(request: Request):
     body = await request.json()
+    seen_auth.append(request.headers.get("authorization", ""))
     usage = {"prompt_tokens": 40, "completion_tokens": 60, "total_tokens": 100}
     if body.get("stream"):
         async def gen():
@@ -28,4 +30,4 @@ async def chat(request: Request):
             yield "data: " + json.dumps({"choices": [], "usage": usage}) + "\n\n"
             yield "data: [DONE]\n\n"
         return StreamingResponse(gen(), media_type="text/event-stream")
-    return {"choices": [{"message": {"role": "assistant", "content": "hello world"}}], "usage": usage}
+    return {"model": body.get("model"), "choices": [{"message": {"role": "assistant", "content": "hello world"}}], "usage": usage}

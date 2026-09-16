@@ -1,0 +1,25 @@
+services:
+  gateway:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./upstreams.json:/app/upstreams.json:ro
+      - gateway-data:/data
+    ports:
+      - "127.0.0.1:8800:8800"     # 只对本机开放，外面由 Caddy 反代
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    network_mode: host
+
+volumes:
+  gateway-data:
+  caddy-data:

@@ -1,0 +1,4 @@
+# Caddy 自动向 Let's Encrypt 申请并续期 HTTPS 证书，不用手动管。
+api.semifly.ai {
+    reverse_proxy 127.0.0.1:8800
+}

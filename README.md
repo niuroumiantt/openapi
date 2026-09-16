@@ -3,17 +3,20 @@
 一个"轻"的本地模型接入层。目标：让 OA（或任何 OpenAI 兼容工具）用同一种写法调用本地模型和云端 API，
 换模型只改地址和 Key。
 
-第一个模块是 **gateway**：给本地 Ollama 模型发放"限时"或"限量"的临时 API Key。
+第一个模块是 **gateway**：给一个或多个模型上游发放"限时"或"限量"的临时 API Key。
+上游可以是本地 Ollama、云上 GPU 上的 Ollama，也可以是买来的 DeepSeek、通义等 API。
 
 ```
-你的 OA / Python 脚本 / 任何 OpenAI 兼容工具
-        │  Authorization: Bearer sk-local-xxx
+客户 / 你的 OA / 任何 OpenAI 兼容工具
+        │  Authorization: Bearer sk-local-xxx    model=semifly-27b
         ▼
-网关 127.0.0.1:8800   ← 检查 Key：过期了吗？额度还有吗？记账
+网关 :8800   ← 检查 Key：过期？额度？允许这个模型？ → 按 model 选上游 → 按权重扣点
         │
-        ▼
-Ollama 127.0.0.1:11434 → 你的 27b 模型
+        ├──→ Ollama 127.0.0.1:11434（你的 27b）
+        └──→ https://api.deepseek.com（你的真实 Key 只在网关里）
 ```
+
+公网部署见 [DEPLOY.md](DEPLOY.md)。
 
 ## 启动
 
@@ -35,11 +38,17 @@ GATEWAY_MODEL=qwen3.8:27b-mxfp8 python -m gateway.app
 | `GATEWAY_MODEL` | 空 | 设了就强制所有请求用这个模型；空则由调用方指定 |
 | `GATEWAY_HOST` / `GATEWAY_PORT` | `127.0.0.1` / `8800` | 网关监听地址。要给局域网其他设备用就改成 `0.0.0.0` |
 | `GATEWAY_DB` | `keys.sqlite3` | Key 数据库文件 |
+| `GATEWAY_CONFIG` | `upstreams.json` | 多上游配置，见 `upstreams.example.json`。文件不存在时退回单个 Ollama 模式 |
+| `GATEWAY_ADMIN_TOKEN` | 空 | 管理口令。空则管理接口只认本机请求；公网部署必须设置 |
 
 ## 发 Key
 
-管理页上两组按钮：按时间（5 分钟、30 分钟、2 小时、1 天）和按用量（10 万、100 万、1000 万 token）。
+管理页上两组按钮：按时间（5 分钟、30 分钟、2 小时、1 天）和按点数（10 万、100 万、1000 万点）。
+上面可以勾选这把 Key 允许用的模型，不勾选就是全部。
 Key 只显示一次，数据库里只存哈希。额度归零或过期后 Key 自动失效，也可以手动点"作废"。
+
+**点数**：1 点 = 权重为 1 的模型的 1 个 token。`upstreams.json` 里给每个模型设 `weight`，
+本地模型设 1，买来的贵模型按成本设 2、10、30。客户买的是点数，差价就是你的毛利。
 
 也可以用 curl（管理接口只接受本机请求）：
 
@@ -47,7 +56,7 @@ Key 只显示一次，数据库里只存哈希。额度归零或过期后 Key �
 curl -X POST http://127.0.0.1:8800/admin/keys -H 'content-type: application/json' \
      -d '{"kind":"time","minutes":5}'
 curl -X POST http://127.0.0.1:8800/admin/keys -H 'content-type: application/json' \
-     -d '{"kind":"tokens","tokens":1000000}'
+     -d '{"kind":"tokens","tokens":1000000,"models":["semifly-27b"]}'
 ```
 
 ## 用 Key
@@ -72,12 +81,12 @@ curl http://127.0.0.1:8800/v1/key -H "Authorization: Bearer sk-local-替换成�
 ```
 
 ```json
-{"status":"active","kind":"time","model":"qwen3.8:27b-mxfp8","remaining_seconds":241,
- "requests":1,"tokens_used":81, ...}
+{"status":"active","kind":"time","models":["semifly-27b"],"remaining_seconds":241,
+ "requests":1,"points_used":81, ...}
 ```
 
 支持 `/v1/chat/completions`、`/v1/completions`、`/v1/embeddings`、`/v1/models`，流式和非流式都支持。
-限量计数用的是 Ollama 返回的 `usage.total_tokens`（含输入、输出和思考过程）。
+计数用的是上游返回的 `usage.total_tokens`（含输入、输出和思考过程）乘以模型权重。
 最后一次请求可能略微超出额度，之后 Key 立即失效。
 
 ## 测试
@@ -92,7 +101,8 @@ python -m pytest
 ## 结构
 
 ```
-gateway/app.py           网关本体：鉴权、代理、计量（~200 行）
+gateway/app.py           网关本体：鉴权、路由、代理、计量
+gateway/upstreams.py     模型目录：公开名 → 上游 + 真实模型名 + 权重
 gateway/db.py            SQLite 存 Key（只存哈希）
 gateway/static/index.html 管理页面
 tests/                   测试
