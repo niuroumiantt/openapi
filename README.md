@@ -65,6 +65,17 @@ resp = client.chat.completions.create(
 print(resp.choices[0].message.content)
 ```
 
+只有 Key 也能反查它代表什么（模型、类型、剩余时间或额度）：
+
+```bash
+curl http://127.0.0.1:8800/v1/key -H "Authorization: Bearer sk-local-替换成你的Key"
+```
+
+```json
+{"status":"active","kind":"time","model":"qwen3.8:27b-mxfp8","remaining_seconds":241,
+ "requests":1,"tokens_used":81, ...}
+```
+
 支持 `/v1/chat/completions`、`/v1/completions`、`/v1/embeddings`、`/v1/models`，流式和非流式都支持。
 限量计数用的是 Ollama 返回的 `usage.total_tokens`（含输入、输出和思考过程）。
 最后一次请求可能略微超出额度，之后 Key 立即失效。

@@ -112,9 +112,36 @@ def _estimate(text: str) -> int:
     return max(1, len(text) // 4)
 
 
+@app.get("/v1/key")
+async def key_info(request: Request):
+    """Self-service lookup: what does the key in the Authorization header allow?"""
+    auth = request.headers.get("authorization", "")
+    key = store.lookup(auth[7:].strip()) if auth.lower().startswith("bearer ") else None
+    if key is None:
+        raise HTTPException(401, "invalid key")
+    info = {
+        "status": key["status"],
+        "kind": key["kind"],
+        "label": key["label"],
+        "model": MODEL or "any",
+        "created_at": key["created_at"],
+        "requests": key["requests"],
+        "tokens_used": key["tokens_used"],
+    }
+    if key["kind"] == "time":
+        info["expires_at"] = key["expires_at"]
+        info["remaining_seconds"] = key["remaining_seconds"]
+    else:
+        info["token_limit"] = key["token_limit"]
+        info["remaining_tokens"] = key["remaining_tokens"]
+    return info
+
+
 @app.get("/v1/models")
 async def models(request: Request):
     _auth(request)
+    if MODEL:
+        return {"object": "list", "data": [{"id": MODEL, "object": "model", "owned_by": "ollama"}]}
     r = await client.get("/v1/models")
     return JSONResponse(r.json(), status_code=r.status_code)
 

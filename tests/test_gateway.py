@@ -89,3 +89,15 @@ def test_admin_is_localhost_only(gw):
     class R: client = C()
     with pytest.raises(Exception):
         mod._require_local(R())
+
+
+def test_key_self_lookup(gw):
+    k = gw.post("/admin/keys", json={"kind": "tokens", "tokens": 1000, "label": "demo"}).json()
+    h = {"authorization": f"Bearer {k['key']}"}
+    info = gw.get("/v1/key", headers=h).json()
+    assert info["status"] == "active" and info["model"] == "fake:27b" and info["remaining_tokens"] == 1000
+    _chat(gw, k["key"])
+    info = gw.get("/v1/key", headers=h).json()
+    assert info["remaining_tokens"] == 900 and info["requests"] == 1 and info["label"] == "demo"
+    assert gw.get("/v1/models", headers=h).json()["data"][0]["id"] == "fake:27b"
+    assert gw.get("/v1/key", headers={"authorization": "Bearer nope"}).status_code == 401
