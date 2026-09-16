@@ -1,5 +1,8 @@
 # 把网关部署到 api.semifly.ai
 
+> 如果服务器由 `niuroumiantt/infra` 统一编排(Lightsail 合并主机),不要按本文手动部署:
+> 网关作为 `openapi` 服务已写进 infra 的 compose 与 Caddyfile,push 即部署。本文适用于单独一台机器。
+
 目标：客户用 `https://api.semifly.ai/v1` 和一把 `sk-local-…` 的 Key 调模型。
 
 需要：一台有公网 IP 的 Linux 服务器（你现有的网站服务器就行），域名 DNS 的控制权。

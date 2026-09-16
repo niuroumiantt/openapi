@@ -1,0 +1,11 @@
+# 服务器上的克隆 .git/config 存着 GitHub 令牌,绝不能进镜像层。
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.sqlite3
+.env
+.env.*
+tests
+DEPLOY.md

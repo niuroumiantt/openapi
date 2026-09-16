@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - ./upstreams.json:/app/upstreams.json:ro
+      - ./upstreams.json:/data/upstreams.json:ro
       - gateway-data:/data
     ports:
       - "127.0.0.1:8800:8800"     # 只对本机开放，外面由 Caddy 反代
