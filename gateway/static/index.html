@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Ollama Key Gateway</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--bg:#fff;--fg:#1a1a1a;--muted:#666;--line:#e5e5e5;--accent:#2563eb;--ok:#16a34a;--bad:#dc2626;--bar:#eef2ff}
+  @media (prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--muted:#999;--line:#2a2a2a;--bar:#1e2235}}
+  body{margin:0;padding:24px 16px;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,system-ui,sans-serif;max-width:860px;margin-inline:auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .status{display:flex;align-items:center;gap:8px;color:var(--muted);margin-bottom:24px}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--bad)} .dot.ok{background:var(--ok)}
+  section{margin-bottom:28px} h2{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px}
+  .row{display:flex;flex-wrap:wrap;gap:8px}
+  button{border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.danger:hover{border-color:var(--bad);color:var(--bad)}
+  #newkey{display:none;margin-top:14px;padding:12px;border:1px solid var(--accent);border-radius:8px;background:var(--bar)}
+  code{font-family:ui-monospace,Menlo,monospace;word-break:break-all}
+  table{width:100%;border-collapse:collapse} td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:14px}
+  th{color:var(--muted);font-weight:500}
+  .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  tr.dead{opacity:.45}
+  small{color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>Ollama Key Gateway</h1>
+<div class="status"><span class="dot" id="dot"></span><span id="stext">连接中…</span></div>
+
+<section>
+  <h2>按时间发 Key</h2>
+  <div class="row">
+    <button data-kind="time" data-minutes="5">5 分钟</button>
+    <button data-kind="time" data-minutes="30">30 分钟</button>
+    <button data-kind="time" data-minutes="120">2 小时</button>
+    <button data-kind="time" data-minutes="1440">1 天</button>
+  </div>
+</section>
+<section>
+  <h2>按用量发 Key</h2>
+  <div class="row">
+    <button data-kind="tokens" data-tokens="100000">10 万 token</button>
+    <button data-kind="tokens" data-tokens="1000000">100 万 token</button>
+    <button data-kind="tokens" data-tokens="10000000">1000 万 token</button>
+  </div>
+  <div id="newkey">新 Key（只显示这一次，请立即复制）：<br><code id="keytext"></code></div>
+</section>
+<section>
+  <h2>已发放的 Key</h2>
+  <table><thead><tr><th>Key</th><th>类型</th><th style="width:40%">剩余</th><th>请求数</th><th></th></tr></thead><tbody id="keys"></tbody></table>
+</section>
+
+<script>
+const $=s=>document.querySelector(s);
+async function api(m,u,b){const r=await fetch(u,{method:m,headers:{'content-type':'application/json'},body:b?JSON.stringify(b):undefined});if(!r.ok)throw new Error(await r.text());return r.json()}
+function fmtTime(s){if(s>=3600)return (s/3600).toFixed(1)+' 小时';if(s>=60)return Math.floor(s/60)+' 分 '+(s%60)+' 秒';return s+' 秒'}
+function fmtTok(n){return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n)}
+async function status(){try{const s=await api('GET','/admin/status');$('#dot').className='dot'+(s.ok?' ok':'');$('#stext').textContent=s.ok?`Ollama 已连接 · ${s.model||'(未指定模型)'}`:`无法连接 Ollama：${s.error}`}catch(e){$('#stext').textContent='网关未响应'}}
+async function refresh(){
+  const ks=await api('GET','/admin/keys');
+  $('#keys').innerHTML=ks.map(k=>{
+    const active=k.status==='active';let rem,pct;
+    if(k.kind==='time'){const total=(k.expires_at-k.created_at);rem=active?fmtTime(k.remaining_seconds):'—';pct=active?100*k.remaining_seconds/total:0}
+    else{rem=active?fmtTok(k.remaining_tokens)+' / '+fmtTok(k.token_limit):'—';pct=active?100*k.remaining_tokens/k.token_limit:0}
+    const label={active:'',expired:'已过期',exhausted:'已用完',revoked:'已作废'}[k.status];
+    return `<tr class="${active?'':'dead'}"><td><code>${k.prefix}…</code><br><small>${k.label||''}</small></td><td>${k.kind==='time'?'时间':'用量'}</td><td>${label||rem}<div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div></td><td>${k.requests}<br><small>${fmtTok(k.tokens_used)} tok</small></td><td>${active?`<button class="danger" data-revoke="${k.id}">作废</button>`:''}</td></tr>`}).join('');
+}
+document.querySelectorAll('button[data-kind]').forEach(b=>b.onclick=async()=>{
+  const d=b.dataset;const body={kind:d.kind,label:b.textContent.trim()};if(d.minutes)body.minutes=+d.minutes;if(d.tokens)body.tokens=+d.tokens;
+  const k=await api('POST','/admin/keys',body);$('#keytext').textContent=k.key;$('#newkey').style.display='block';refresh();
+});
+document.addEventListener('click',async e=>{const id=e.target.dataset.revoke;if(id&&confirm('确定作废这把 Key？')){await api('DELETE','/admin/keys/'+id);refresh()}});
+status();refresh();setInterval(refresh,2000);setInterval(status,10000);
+</script>
+</body>
+</html>
