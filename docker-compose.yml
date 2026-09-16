@@ -12,13 +12,10 @@ services:
   caddy:
     image: caddy:2
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+    network_mode: host          # 直接占用主机的 80/443，反代到 127.0.0.1:8800
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
-    network_mode: host
 
 volumes:
   gateway-data:
