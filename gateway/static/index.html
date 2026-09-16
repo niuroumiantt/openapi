@@ -17,6 +17,9 @@
   button:hover{border-color:var(--accent);color:var(--accent)}
   button.danger:hover{border-color:var(--bad);color:var(--bad)}
   #newkey{display:none;margin-top:14px;padding:12px;border:1px solid var(--accent);border-radius:8px;background:var(--bar)}
+  #newkey .kv{display:flex;gap:10px;align-items:center;margin-top:6px}
+  #newkey code{flex:1}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)} button.primary:hover{color:#fff;opacity:.9}
   code{font-family:ui-monospace,Menlo,monospace;word-break:break-all}
   table{width:100%;border-collapse:collapse} td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:14px}
   th{color:var(--muted);font-weight:500}
@@ -46,7 +49,7 @@
     <button data-kind="tokens" data-tokens="1000000">100 万 token</button>
     <button data-kind="tokens" data-tokens="10000000">1000 万 token</button>
   </div>
-  <div id="newkey">新 Key（只显示这一次，请立即复制）：<br><code id="keytext"></code></div>
+  <div id="newkey">新 Key（只显示这一次，请立即复制）：<div class="kv"><code id="keytext"></code><button class="primary" id="copy">复制</button></div></div>
 </section>
 <section>
   <h2>已发放的 Key</h2>
@@ -72,6 +75,11 @@ document.querySelectorAll('button[data-kind]').forEach(b=>b.onclick=async()=>{
   const d=b.dataset;const body={kind:d.kind,label:b.textContent.trim()};if(d.minutes)body.minutes=+d.minutes;if(d.tokens)body.tokens=+d.tokens;
   const k=await api('POST','/admin/keys',body);$('#keytext').textContent=k.key;$('#newkey').style.display='block';refresh();
 });
+$('#copy').onclick=async()=>{
+  const t=$('#keytext').textContent;
+  try{await navigator.clipboard.writeText(t)}catch(_){const r=document.createRange();r.selectNodeContents($('#keytext'));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);document.execCommand('copy')}
+  $('#copy').textContent='已复制';setTimeout(()=>$('#copy').textContent='复制',1500);
+};
 document.addEventListener('click',async e=>{const id=e.target.dataset.revoke;if(id&&confirm('确定作废这把 Key？')){await api('DELETE','/admin/keys/'+id);refresh()}});
 status();refresh();setInterval(refresh,2000);setInterval(status,10000);
 </script>
