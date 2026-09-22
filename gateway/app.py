@@ -50,7 +50,11 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 def _same_origin(request: Request) -> None:
     """Cookie-authenticated writes may only come from this site."""
     origin = request.headers.get("origin")
-    if origin and origin != str(request.base_url).rstrip("/"):
+    # Behind TLS-terminating Caddy, request.base_url is the internal HTTP URL.
+    # The explicitly configured public origin is therefore the authority for
+    # browser write checks as well as links in transactional email.
+    expected_origin = os.environ.get("SEMIFLY_PUBLIC_BASE_URL", str(request.base_url)).rstrip("/")
+    if origin and origin.rstrip("/") != expected_origin:
         raise HTTPException(403, "same-origin request required")
 
 
@@ -384,8 +388,8 @@ async def create_checkout(request: Request):
             mode="payment", customer_email=user["email"], client_reference_id=str(order["id"]),
             line_items=[{"price_data": {"currency": product["currency"], "unit_amount": product["price_cents"],
                 "product_data": {"name": f"{product['model']} · {product['token_amount']:,} tokens"}}, "quantity": 1}],
-            success_url=str(request.base_url) + "?checkout=success",
-            cancel_url=str(request.base_url) + "?checkout=cancelled",
+            success_url=_public_base(request) + "?checkout=success",
+            cancel_url=_public_base(request) + "?checkout=cancelled",
             metadata={"semifly_order_id": str(order["id"]), "product_code": product["code"]},
         )
         platform.attach_checkout(order["id"], session.id)
