@@ -59,6 +59,35 @@ curl -X POST http://127.0.0.1:8800/admin/keys -H 'content-type: application/json
      -d '{"kind":"tokens","tokens":1000000,"models":["semifly-27b"]}'
 ```
 
+## Semifly 客户平台（开发中）
+
+`/` 是面向客户的 Semifly 门户；`/v1` 仍是 OpenAI 兼容 API。客户将购买模型专属
+token 包，例如 `deepseek-chat · 5,000,000 tokens · USD 15`，并在门户中查看余额、
+项目和订单。`/admin/console` 是旧内部运维控制台，不能作为客户后台。
+
+账户密码使用 Argon2id 哈希；浏览器会话是 `HttpOnly`、`Secure`、`SameSite=Strict`
+Cookie。首个管理员由 `SEMIFLY_ADMIN_EMAIL` 和 `SEMIFLY_ADMIN_PASSWORD` 在空数据库
+初始化，角色为 `system_admin`；初始化后应从运行环境移除这两个 bootstrap 值。权限来自
+数据库角色，而不是前端或用户名字符串。
+
+Stripe 是唯一付款入口。前端成功跳转**不会**加余额；只有经过 `STRIPE_WEBHOOK_SECRET`
+验签的 `checkout.session.completed` 事件才会把已付款订单写入模型专属额度账本。Stripe
+事件 ID 在数据库中去重，所以重试不会重复充值。
+
+客户 API Key 不再自带独立额度：同一账户下的多个项目 Key 共用该账户已购买的特定模型
+余额。调用前会依据 UTF-8 请求体与 `max_tokens`（或 `max_completion_tokens`）预留上界，
+完成后以实际 token 结算；上游失败会释放预留，超时残留预留会自动过期。这样不会因并发
+或最后一次调用使预付费余额透支。
+
+这套账户与支付功能仍处于开发阶段，不能直接承接真实客户或资金。正式上线前必须完成：
+
+- 将身份、订单和额度账本迁移到受备份与高可用保护的 PostgreSQL；SQLite 仅适合本机开发。
+- 配置 TLS SMTP。验证与重置令牌只存哈希；验证链接有效期 24 小时，重置链接有效期
+  30 分钟，重置密码会撤销该账户全部浏览器会话。
+- 接入管理员 MFA、登录限速和安全审计。
+- 在 Stripe 测试环境完成创建支付、验签 Webhook、退款与重复投递的端到端验收。
+- 在隐私政策、服务条款、退款政策和税务处理准备完毕后才开放注册与收款。
+
 ## 用 Key
 
 和调用 OpenAI 完全一样，只换 `base_url` 和 `api_key`：
@@ -90,6 +119,33 @@ curl http://127.0.0.1:8800/v1/key -H "Authorization: Bearer sk-local-替换成�
 最后一次请求可能略微超出额度，之后 Key 立即失效。
 
 ## 测试
+
+### 本机调用明细
+
+管理页新增最近 100 次调用，`GET /admin/usage?limit=100` 受管理权限保护。
+每次保存 Key ID、公开/实际模型、上游、耗时、状态、输入/输出/总 token、加权点数。
+实报 token 与估算点数分开；缺失 token 显示未知，不将字符估算冒充实测。
+默认不保存请求正文、模型回答或 API Key。点数是额度单位，不是货币费用；实际成本需另配费率。
+输出到达上限标为 `output_limit`，流式中断标为 `incomplete_stream`。
+目前尚无员工级权限、币种/费率、缓存 token 明细、分页筛选及防篡改审计，不能作为完整计费后台。
+
+### 按项目查看 API 对话（显式开启）
+
+设置 `GATEWAY_CAPTURE_LABELS=mail2leads` 后，仅保存该标签的 Key 发来的 messages
+与模型最终 content；系统提示与邮件上下文也是敏感数据。不会保存 Key、请求头或模型
+reasoning 字段。项目归属取服务端 Key 标签，而不是客户端自报的项目名。
+
+管理页逐条「查看对话」通过独立的 `/admin/usage/{id}/content` 获取正文，沿用管理鉴权，
+普通调用 Key 无权读取。统计列表只返回是否有正文，不返回正文。历史未开启记录的调用
+无法补回。支持非流式与流式回答，后者中断时只保留已收到的部分并显示 incomplete_stream。
+
+这是 API 请求/回答观测，不是跨应用数据库访问，也尚未实现按业务会话聚合。
+原始内容保存在本机 SQLite，不是加密正文库；尚无自动到期清理、员工级正文权限或完整
+查看审计。当前仅本机开发使用，不公开部署。关闭捕获不会自动删除已保存记录。
+
+本机开发建议将数据库放在 `~/.local/share/openapi/keys.sqlite3` 并设私有权限，
+网关仅监听 `127.0.0.1:8800`，上游 Ollama 仅监听 `127.0.0.1:11434`。
+应用只使用网关 `/v1` 与按项目签发的受限 Key；不要把网关或 Ollama 直接开放公网。
 
 ```bash
 uv pip install -r requirements-dev.txt

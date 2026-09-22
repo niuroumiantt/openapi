@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Semifly — AI infrastructure, made clear</title>
+  <link rel="stylesheet" href="/static/portal.css">
+  <script defer src="/static/portal.js"></script>
+</head>
+<body>
+  <header class="top"><a class="brand" href="/">semifly<span>•</span></a><nav><a href="#models">Models</a><a href="#usage">Usage</a><button id="sign-in" class="quiet">Sign in</button><button id="get-started">Get started</button></nav></header>
+  <main>
+    <section id="hero" class="hero"><p class="eyebrow">ONE API. CLEAR CONTROL.</p><h1>Build with models.<br><em>Stay in control.</em></h1><p class="lede">Purchase exactly the capacity your project needs. Track every request, manage API keys, and keep spend visible from one calm workspace.</p><div class="actions"><button id="hero-start">Create your account</button><a href="#models">Explore models <span>↓</span></a></div><div class="hero-note"><span>◆</span> Prepaid capacity · No surprise overages · Model-specific balances</div></section>
+    <section id="dashboard" hidden><div class="section-head"><div><p class="eyebrow">YOUR WORKSPACE</p><h2>Good to see you, <span id="person"></span>.</h2></div><button id="sign-out" class="quiet">Sign out</button></div><div id="balances" class="balances"></div><div class="dashboard-grid"><section class="card"><h3>Projects</h3><p>Keep API keys scoped to the work they power.</p><div id="projects"></div><form id="project-form"><input name="name" maxlength="64" placeholder="New project name" required><button>Add project</button></form></section><section class="card"><h3>API keys</h3><p>Each key is tied to a project and purchased model capacity.</p><div id="keys"></div><form id="key-form"><select name="project" aria-label="Project"></select><select name="model" aria-label="Model"></select><input name="label" maxlength="64" placeholder="Key label" required><button>Create key</button></form></section><section class="card"><h3>Recent orders</h3><div id="orders" class="orders"></div></section><section class="card"><h3>Recent usage</h3><p>Provider-reported tokens are shown after each completed request.</p><div id="usage"></div></section></div></section>
+    <section id="models" class="models"><div class="section-head"><div><p class="eyebrow">MODEL CAPACITY</p><h2>Choose capacity with<br>no hidden conversion.</h2></div><p>Each package applies to the named model. Usage is metered from the provider response and shown in your workspace.</p></div><div id="catalogue" class="catalogue"><p class="loading">Loading available products…</p></div></section>
+    <section id="usage" class="principles"><p class="eyebrow">DESIGNED FOR CLARITY</p><div><h2>A direct line from<br>purchase to usage.</h2><ol><li><span>01</span><p><b>Pick a model</b><br>Buy a defined number of tokens for the model your application uses.</p></li><li><span>02</span><p><b>Pay securely</b><br>Checkout is handled by Stripe. Semifly never receives card details.</p></li><li><span>03</span><p><b>Use and observe</b><br>Use API keys per project and see the resulting balance and request activity.</p></li></ol></div></section>
+  </main>
+  <footer><span>© Semifly</span><span>Terms · Privacy · Status</span></footer>
+  <dialog id="auth-dialog"><form id="auth-form"><button type="button" class="close" data-close="auth-dialog">×</button><p class="eyebrow" id="auth-kicker">WELCOME BACK</p><h2 id="auth-title">Sign in</h2><p id="auth-copy">Use your Semifly account to manage capacity and projects.</p><label id="username-field">Username<input name="username" autocomplete="username" minlength="3" maxlength="32"></label><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required minlength="12"></label><p id="auth-error" role="alert"></p><button id="auth-submit">Sign in</button><button type="button" id="auth-switch" class="quiet">New here? Create an account</button></form></dialog>
+  <dialog id="notice"><button type="button" class="close" data-close="notice">×</button><p class="eyebrow">ACCOUNT CREATED</p><h2>Check your email</h2><p>Email verification is required before a new account can purchase capacity.</p></dialog>
+  <dialog id="key-notice"><button type="button" class="close" data-close="key-notice">×</button><p class="eyebrow">API KEY CREATED</p><h2>Save this key now</h2><p>For security, Semifly will not show it again.</p><code id="new-key"></code><button id="copy-key">Copy API key</button></dialog>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>
