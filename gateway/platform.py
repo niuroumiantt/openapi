@@ -188,6 +188,24 @@ class PlatformStore:
         return self._user(existing) if existing else self.create_user(
             email=email, username=username, password=password, role='system_admin', verified=True)
 
+    def remove_unverified_user(self, user_id: int) -> bool:
+        """Undo a just-created account when its verification email cannot be sent."""
+        with self._conn() as c:
+            c.execute('BEGIN IMMEDIATE')
+            try:
+                row = c.execute('SELECT role,email_verified FROM users WHERE id=?', (user_id,)).fetchone()
+                if not row or row['role'] != 'member' or row['email_verified']:
+                    c.execute('ROLLBACK')
+                    return False
+                c.execute('DELETE FROM email_tokens WHERE user_id=?', (user_id,))
+                c.execute('DELETE FROM sessions WHERE user_id=?', (user_id,))
+                c.execute('DELETE FROM users WHERE id=?', (user_id,))
+                c.execute('COMMIT')
+                return True
+            except Exception:
+                c.execute('ROLLBACK')
+                raise
+
     def authenticate(self, identity: str, password: str) -> dict | None:
         with self._conn() as c:
             row = c.execute('SELECT * FROM users WHERE email=? OR username=?',

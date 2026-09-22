@@ -185,6 +185,7 @@ async def register(request: Request):
         raise HTTPException(400, str(e)) from e
     if REQUIRE_VERIFIED_EMAIL:
         if not _send_email_token(request, user, "verify_email"):
+            platform.remove_unverified_user(user["id"])
             raise HTTPException(503, "could not send verification email")
         return JSONResponse({"user": user, "verification_required": True}, status_code=201)
     return _session_response(user, platform.create_session(user["id"]), status_code=201)
