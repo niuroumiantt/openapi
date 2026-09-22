@@ -283,6 +283,13 @@ async def customer_dashboard(request: Request):
     return platform.dashboard(_portal_user(request)["id"])
 
 
+@app.get("/portal/models")
+async def customer_models(request: Request):
+    """Authenticated, public model identifiers only; never upstream credentials."""
+    _portal_user(request)
+    return [{"id": name} for name in catalogue.names()]
+
+
 @app.get("/portal/usage")
 async def customer_usage(request: Request):
     """Customer-scoped usage only; request content is never exposed here."""

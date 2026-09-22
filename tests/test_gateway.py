@@ -245,8 +245,11 @@ def test_customer_accounts_projects_catalogue_and_model_balances(fake_ollama, tm
     }
     client, mod = _boot(monkeypatch, tmp_path, fake_ollama, config=config)
     with client:
+        assert client.get('/portal/models').status_code == 401
         assert client.post('/auth/register', json={'email': 'alice@example.com', 'username': 'alice',
                                                     'password': 'a secure password'}).status_code == 201
+        assert client.get('/portal/models').json() == [{'id': name} for name in mod.catalogue.names()]
+        assert all(set(item) == {'id'} for item in client.get('/portal/models').json())
         assert client.get('/auth/me').headers['cache-control'] == 'no-store'
         assert client.get('/auth/me').headers['x-frame-options'] == 'DENY'
         assert client.get('/auth/me').json()['username'] == 'alice'

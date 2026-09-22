@@ -1,0 +1,39 @@
+'use strict';
+// Real account data only. Shared monetary billing is not yet enabled.
+let workspaceData=null, availableModels=[], products=[], activePage='models', chosenModel=null, usagePage=0;
+const workspace=document.createElement('section');workspace.id='workspace';workspace.hidden=true;
+$('main').prepend(workspace);
+const nav=$('.top nav');
+const modelNav=el('button','模型广场','quiet'),keyNav=el('button','我的密钥','quiet');
+modelNav.onclick=()=>showPage('models');keyNav.onclick=()=>showPage('keys');
+nav.querySelectorAll('a').forEach(a=>a.remove());nav.prepend(modelNav,keyNav);
+const menu=document.createElement('details');menu.className='profile-menu';menu.hidden=true;
+const summary=el('summary','账户');menu.append(summary);
+for(const [name,page] of [['账户与安全','account'],['订单与套餐','orders']]){const b=el('button',name,'quiet');b.onclick=()=>{menu.open=false;showPage(page)};menu.append(b)}
+const logout=el('button','退出登录','quiet');logout.onclick=()=>$('#sign-out').click();menu.append(logout);nav.append(menu);
+function showPage(page){activePage=page;usagePage=0;if(!me){openAuth(false);return}drawWorkspace()}
+function action(text,fn,klass=''){const b=el('button',text,klass);b.type='button';b.onclick=fn;return b}
+function block(title){const s=el('section',null,'card');s.append(el('h3',title));return s}
+const stamp=t=>t?new Date(t*1000).toLocaleString():'—';
+function table(headers,rows){const wrap=el('div',null,'table-scroll'),t=document.createElement('table'),head=document.createElement('thead'),hr=document.createElement('tr');headers.forEach(h=>hr.append(el('th',h)));head.append(hr);t.append(head);const body=document.createElement('tbody');rows.forEach(row=>{const tr=document.createElement('tr');row.forEach(value=>{const td=document.createElement('td');td.append(value instanceof Node?value:document.createTextNode(String(value??'—')));tr.append(td)});body.append(tr)});t.append(body);wrap.append(t);return wrap}
+renderAccount=function(data){me=data;workspaceData=null;workspace.hidden=!me;menu.hidden=!me;summary.textContent=me?.username||'账户';$('body').classList.toggle('signed-in',!!me);$('#dashboard').hidden=true;$('#hero').hidden=!!me;$('#models').hidden=!!me;$('.principles').hidden=!!me;$('#sign-in').hidden=!!me;$('#get-started').hidden=!!me;$('#hero-start').textContent='Create your account';if(me)refreshDashboard();else workspace.replaceChildren()};
+refreshDashboard=async function(){if(!me)return;const userId=me.id;try{const [d,m,p]=await Promise.all([api('/portal/dashboard'),api('/portal/models'),api('/portal/catalog')]);if(!me||me.id!==userId)return;workspaceData=d;availableModels=m;products=p;drawWorkspace()}catch(e){workspace.replaceChildren(el('p',e.message));toast(e.message)}};
+async function issueKey(models){if(!models.length){toast('暂无可接入模型');return}const project=workspaceData.projects[0]||await api('/portal/projects',{method:'POST',body:JSON.stringify({name:'Default application'})});const result=await api(`/portal/projects/${project.id}/keys`,{method:'POST',body:JSON.stringify({label:'Semifly application',models})});$('#new-key').textContent=result.key;$('#key-notice').showModal();await refreshDashboard()}
+function guarded(fn){return async()=>{try{await fn()}catch(e){toast(e.message)}}}
+function drawWorkspace(){if(!workspaceData)return;const d=workspaceData;workspace.replaceChildren();modelNav.classList.toggle('selected',activePage==='models');keyNav.classList.toggle('selected',activePage==='keys');
+if(activePage==='models'){
+workspace.append(el('p','ONE KEY. YOUR MODELS.','eyebrow'),el('h1','选好模型，直接接入。'),el('p','一把 Semifly Key 识别你的应用；平台按所选模型检查权限和套餐额度。','workspace-intro'));
+const note=block('账户额度');note.append(el('p','共享美元钱包尚未开放。当前按已购买的指定模型套餐扣除 tokens，不存在模拟余额。'));const balances=el('div',null,'balances');d.balances.forEach(b=>{const item=el('div',null,'balance');item.append(el('small',b.model),el('strong',fmt(b.remaining_tokens)),el('small','tokens remaining'));balances.append(item)});if(!d.balances.length)balances.append(el('p','暂无已购套餐。获取 Key 不代表已获得可消费额度。'));note.append(balances);workspace.append(note);
+const search=document.createElement('input');search.placeholder='搜索模型';search.setAttribute('aria-label','搜索模型');const grid=el('div',null,'catalogue');const list=()=>{grid.replaceChildren();availableModels.filter(m=>m.id.toLowerCase().includes(search.value.toLowerCase())).forEach(m=>{const card=block(m.id),offers=products.filter(p=>p.model===m.id);card.append(el('small','已配置路由 · 实际可用性以调用结果为准'));if(offers.length)offers.forEach(p=>card.append(el('p',`${fmt(p.token_amount)} tokens · ${money(p)}`),action('购买此套餐',()=>checkout(p.id))));else card.append(el('p','暂无在售套餐，暂不接受该模型付款。'));card.append(action('获取接入配置 →',()=>{chosenModel=m.id;drawWorkspace();$('#connection').scrollIntoView({block:'center'})}));grid.append(card)});if(!grid.childElementCount)grid.append(el('p','暂无匹配模型。'))};search.oninput=list;workspace.append(search,grid);list();
+if(chosenModel){const c=block('接入 '+chosenModel);c.id='connection';c.append(el('p','API 地址'),el('code',location.origin+'/v1'),el('p','Model ID'),el('code',chosenModel));const existing=d.api_keys.filter(k=>k.status==='active'&&(k.models==='*'||k.models.includes(chosenModel)));if(existing.length){c.append(el('p','使用已保存的完整密钥；切换模型只需修改 Model ID。'));existing.forEach(k=>c.append(el('p',`${k.label||'应用'} · ${k.prefix}…`)));c.append(action('管理或换发密钥',()=>showPage('keys')))}else c.append(el('p','由 Semifly 为你签发，可访问当前目录内模型；实际调用仍需要对应账户额度。'),action('生成多模型 Semifly Key',guarded(()=>issueKey(availableModels.map(m=>m.id)))));workspace.append(c)}
+const usage=block('最近调用记录');const rows=d.usage.slice(usagePage*10,usagePage*10+10).map(u=>[stamp(u.recorded_at),u.model,u.project,u.prompt_tokens??'—',u.completion_tokens??'—',u.status]);usage.append(table(['时间','模型','应用','输入 tokens','输出 tokens','状态'],rows));if(!rows.length)usage.append(el('p','还没有调用记录。'));usage.append(el('p',`最近 ${d.usage.length} 条 · 第 ${usagePage+1} 页`));const prev=action('上一页',()=>{usagePage--;drawWorkspace()}),next=action('下一页',()=>{usagePage++;drawWorkspace()});prev.disabled=usagePage===0;next.disabled=(usagePage+1)*10>=d.usage.length;usage.append(prev,next);workspace.append(usage);
+}else if(activePage==='keys'){
+workspace.append(el('h1','我的密钥'),el('p','这是你的 Semifly 访问凭据，不是上游原厂密钥。余额与套餐属于账户，撤销密钥不会清空额度。'),action('为另一个应用生成 Key',guarded(()=>issueKey(availableModels.map(m=>m.id)))));
+const rows=d.api_keys.map(k=>{const controls=el('div');if(k.status==='active'){controls.append(action('撤销',()=>revokeKey(k.id)),action('撤销并换发',guarded(async()=>{if(!confirm('旧 Key 将立即失效，应用需要更新。账户额度和历史保留。继续？'))return;await api(`/portal/keys/${k.id}`,{method:'DELETE'});try{await issueKey(k.models==='*'?availableModels.map(m=>m.id):k.models)}catch(e){await refreshDashboard();throw Error('旧 Key 已撤销，新 Key 未生成，请重新创建：'+e.message)}})))}return[k.label||'应用',k.prefix+'…',k.models==='*'?'全部模型':k.models.join(', '),stamp(k.created_at),k.status==='active'?'有效':'已撤销',controls]});workspace.append(table(['名称','Key','允许模型','创建时间','状态','操作'],rows));if(!rows.length)workspace.append(el('p','还没有密钥。可去模型广场选择模型并获取接入配置。'));
+}else if(activePage==='orders'){
+workspace.append(el('h1','订单与套餐'),el('p','保留已购买模型套餐及支付记录；不同模型的 tokens 不合并计算。'));workspace.append(table(['订单','模型','购买 tokens','金额','状态','时间'],d.orders.map(o=>[o.code,o.model,fmt(o.token_amount),money({currency:o.currency,price_cents:o.amount_cents}),o.status,stamp(o.created_at)])));if(!d.orders.length)workspace.append(el('p','暂无订单。'));workspace.append(el('p','展示最近 20 笔订单。'));
+}else{workspace.append(el('h1','账户与安全'),el('p',`用户名：${me.username}`),el('p',`邮箱：${me.email}`),el('p','Key 遗失或疑似泄露时，撤销并换发。账户额度与历史使用记录保留。'),action('管理密钥',()=>showPage('keys')))}
+}
+$('#key-notice').addEventListener('close',()=>{$('#new-key').textContent=''});
+$('#hero-start').onclick=()=>openAuth(true);
+(async()=>{await catalogue();try{renderAccount(await api('/auth/me'))}catch{renderAccount(null)}})();
