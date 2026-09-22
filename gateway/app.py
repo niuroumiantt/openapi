@@ -58,6 +58,12 @@ def _same_origin(request: Request) -> None:
         raise HTTPException(403, "same-origin request required")
 
 
+def _client_address(request: Request) -> str:
+    """Use the client address supplied by the trusted Caddy ingress."""
+    forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+    return forwarded or (request.client.host if request.client else "unknown")
+
+
 def _portal_user(request: Request) -> dict:
     raw = request.cookies.get(SESSION_COOKIE, "")
     user = platform.session_user(raw) if raw else None
@@ -196,7 +202,7 @@ async def login(request: Request):
     _same_origin(request)
     body = await request.json()
     identity = str(body.get("identity", ""))
-    remote_addr = request.client.host if request.client else "unknown"
+    remote_addr = _client_address(request)
     if not platform.login_allowed(identity, remote_addr):
         raise HTTPException(429, "too many sign-in attempts; try again later")
     user = platform.authenticate(identity, str(body.get("password", "")))
