@@ -182,11 +182,23 @@ class PlatformStore:
         return self._user(row)
 
     def bootstrap_admin(self, *, email: str, password: str, username: str = 'admin') -> dict | None:
-        """Create the one initial administrator. Never changes an existing account."""
+        """Create the initial administrator, or claim its own pending account once."""
         with self._conn() as c:
             existing = c.execute("SELECT * FROM users WHERE role='system_admin' LIMIT 1").fetchone()
-        return self._user(existing) if existing else self.create_user(
-            email=email, username=username, password=password, role='system_admin', verified=True)
+            if existing:
+                return self._user(existing)
+            pending = c.execute('SELECT * FROM users WHERE email=? AND disabled=0',
+                                (email.strip().lower(),)).fetchone()
+            if pending:
+                try:
+                    c.execute('UPDATE users SET username=?,password_hash=?,role=?,email_verified=1 WHERE id=?',
+                              (username, PASSWORDS.hash(password), 'system_admin', pending['id']))
+                except sqlite3.IntegrityError as e:
+                    raise ValueError('bootstrap administrator username is already registered') from e
+                row = c.execute('SELECT * FROM users WHERE id=?', (pending['id'],)).fetchone()
+                return self._user(row)
+        return self.create_user(email=email, username=username, password=password,
+                                role='system_admin', verified=True)
 
     def remove_unverified_user(self, user_id: int) -> bool:
         """Undo a just-created account when its verification email cannot be sent."""
