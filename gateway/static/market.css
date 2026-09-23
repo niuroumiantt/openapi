@@ -39,3 +39,38 @@
 .trial-offer strong{font-size:17px}.trial-offer p{margin:4px 0;font-size:13px;color:var(--muted)}
 .trial-info{flex-basis:100%;border-top:1px solid var(--line);padding-top:12px}
 @media(max-width:600px){.market-root .featured-catalogue,#workspace .market-root .featured-catalogue,.market-root .semifly-catalogue,#workspace .market-root .semifly-catalogue{grid-template-columns:1fr}.market-root .featured-catalogue>.card h3{font-size:23px}}
+/* Compact workspace overview: preserve readable type and natural scrolling. */
+body.signed-in .top{min-height:56px;padding-top:6px;padding-bottom:6px}
+#workspace:has(#workspace-market){padding-top:12px;padding-bottom:12px;display:flow-root}
+#workspace:has(#workspace-market)>h1{font-size:29px;margin:3px 0 7px}
+#workspace:has(#workspace-market)>.eyebrow{margin-bottom:4px}
+#workspace:has(#workspace-market)>.workspace-intro{font-size:13px;margin:0 0 10px}
+#workspace:has(#workspace-market)>.card:not(#connection){float:left;width:calc(50% - 6px);margin:0 12px 12px 0;padding:12px 14px;min-height:104px}
+#workspace:has(#workspace-market)>.trial-offer{float:left;width:calc(50% - 6px);margin:0 0 12px;padding:12px 14px;min-height:104px;gap:6px 10px}
+#workspace-market{clear:both}
+#workspace:has(#workspace-market)>.card h3{font-size:16px}
+.trial-offer strong{font-size:15px}
+.trial-offer p{font-size:12px;line-height:1.5}
+#workspace .trial-offer button{font-size:13px;padding:8px 12px;margin:0}
+.scenario-search{padding:10px 14px;gap:10px}
+.scenario-search label{font-size:14px}
+.scenario-search input,#workspace .scenario-search input{padding:9px 12px}
+.scenario-search button,#workspace .scenario-search button{padding:9px 14px;margin:0}
+.market-group-title{margin:10px 0 0;font-size:12px}
+.market-root .featured-catalogue,#workspace .market-root .featured-catalogue,.market-root .semifly-catalogue,#workspace .market-root .semifly-catalogue{margin:6px 0 10px;gap:10px}
+.market-root .catalogue>.card,.market-root .featured-catalogue>.card{padding:10px 16px}
+.market-root .catalogue>.card h3{font-size:20px;margin:0 0 6px}
+.market-root .featured-catalogue>.card h3{font-size:23px}
+.market-root .catalogue>.card p{margin:0 0 6px;font-size:13px}
+.market-root .catalogue>.card small{margin-bottom:8px}
+.market-root .catalogue>.card button,#workspace .market-root .catalogue>.card button{padding:7px 12px;font-size:12px}
+.market-root .featured-catalogue>.card:first-child{background:#fcf1e9;border-color:#dfbdac;border-top-color:#a95c3c}
+.market-root .featured-catalogue>.card:first-child h3{color:#743d28}
+.market-root .featured-catalogue>.card:first-child button{background:#965034;color:#fff}
+.market-root .featured-catalogue>.card:nth-child(2){background:#edf4fc;border-color:#bdd0e6;border-top-color:#386b9e}
+.market-root .featured-catalogue>.card:nth-child(2) h3{color:#244e78}
+.market-root .featured-catalogue>.card:nth-child(2) button{background:#315f90;color:#fff}
+body.signed-in>footer{padding-top:12px;padding-bottom:12px}
+#workspace-market>section:not([hidden]){margin-top:10px}
+@media(max-width:760px){#workspace:has(#workspace-market)>.card:not(#connection),#workspace:has(#workspace-market)>.trial-offer{float:none;width:100%;min-height:0;margin:0 0 10px}.scenario-search label{flex-basis:100%}.market-root .featured-catalogue>.card h3{font-size:21px}}
+@media(pointer:coarse){.market-root button,#workspace .market-root button,#workspace .trial-offer button{min-height:44px}}
