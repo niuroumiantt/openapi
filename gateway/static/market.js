@@ -16,14 +16,15 @@ function renderMarket(target){
  const input=document.createElement('input');input.id=label.htmlFor;input.maxLength=300;input.placeholder='例如：翻译英文论文、给商品生成图片、制作短视频';
  const submit=el('button','推荐模型');submit.type='submit';form.append(label,input,submit);
  const results=el('section');results.setAttribute('aria-live','polite');
- const grid=el('div',null,'catalogue'),detail=el('section',null,'card');detail.hidden=true;
+ const groups=el('div',null,'market-groups'),grid=el('div',null,'catalogue featured-catalogue'),ownGrid=el('div',null,'catalogue semifly-catalogue'),detail=el('section',null,'card');detail.hidden=true;
+ groups.append(el('h3','Anthropic & OpenAI','market-group-title'),grid,el('h3','Semifly 服务','market-group-title'),ownGrid);
  const showModel=m=>{detail.hidden=false;detail.replaceChildren(el('h3',m.id),el('p','已配置路由；场景适配和输出质量请以实际测试为准。'));
    if(!m.offers.length)detail.append(el('p','尚未发布价格与套餐，暂不接受付款。'));
    m.offers.forEach(p=>{detail.append(el('p',`${fmt(p.token_amount)} tokens · ${money(p)} · 指定型号套餐`),action('购买此套餐',()=>checkout(p.id)))});
    if(me)detail.append(action('查看接入配置',()=>{chosenModel=m.id;showPage('models');$('#connection')?.scrollIntoView({block:'center'})}));
    else detail.append(action('登录管理接入',()=>openAuth(false)));
  };
- for(const category of marketData.categories){const members=marketData.models.filter(m=>m.category===category.id);const card=block(category.name);card.append(el('p',category.description),el('small',members.length?`${members.length} 个已配置型号 · 价格以明细为准`:'即将开放 · 暂不收款'),action('查看支持模型',()=>{detail.hidden=false;detail.replaceChildren(el('h3',category.name));if(!members.length)detail.append(el('p','尚无已审核并配置的型号。不会展示虚构模型或价格。'));members.forEach(m=>detail.append(action(m.id,()=>showModel(m))));}));grid.append(card)}
+ for(const id of ['claude','openai','open','image','video']){const category=marketData.categories.find(c=>c.id===id);if(!category)continue;const names={claude:'Anthropic · Claude API',openai:'OpenAI API',open:'Semifly 开源模型 API',image:'Semifly Image',video:'Semifly Video'};const members=marketData.models.filter(m=>m.category===category.id);const card=block(names[id]);card.append(el('p',category.description),el('small',members.length?`${members.length} 个已配置型号 · 价格以明细为准`:'即将开放 · 暂不收款'),action('查看支持模型',()=>{detail.hidden=false;detail.replaceChildren(el('h3',names[id]));if(!members.length)detail.append(el('p','尚无已审核并配置的型号。不会展示虚构模型或价格。'));members.forEach(m=>detail.append(action(m.id,()=>showModel(m))));}));(id==='claude'||id==='openai'?grid:ownGrid).append(card)}
  const recommend=(intent)=>{results.replaceChildren(el('h3',intent.label+' · 场景匹配'));
  const candidates=marketData.models.filter(m=>intent.category?m.category===intent.category:m.scenarios.includes(intent.id)).slice(0,3);
  if(!candidates.length){results.append(el('p','这个场景暂时没有已配置的推荐模型，请查看对应商品的开放状态。'));return}
@@ -34,6 +35,6 @@ function renderMarket(target){
  const exact=marketData.models.find(m=>m.id.toLowerCase()===text.toLowerCase());if(exact){showModel(exact);return}
  const matches=intents.filter(i=>i.pattern.test(text));if(matches.length===1){recommend(matches[0]);return}
  results.append(el('p',matches.length?'你更希望先完成哪类任务？':'请再选一个主要用途，帮助我们缩小范围：'));(matches.length?matches:intents).forEach(i=>results.append(action(i.label,()=>recommend(i))));};
- target.append(form,results,grid,detail);
+ target.append(form,results,groups,detail);
 }
 catalogue=async function(){const root=$('#catalogue');root.className='market-root';try{await loadMarket();renderMarket(root)}catch(e){root.replaceChildren(el('p','目录加载失败，请刷新重试。'))}};

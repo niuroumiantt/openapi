@@ -16,6 +16,13 @@ const menu=document.createElement('details');menu.className='profile-menu';menu.
 const summary=el('summary','账户');menu.append(summary);
 for(const [name,page] of [['个人信息与安全','account'],['我的密钥','keys'],['用量记录','usage'],['订单与套餐','orders']]){const b=el('button',name,'quiet');b.onclick=()=>{menu.open=false;showPage(page)};menu.append(b)}
 const logout=el('button','退出登录','quiet');logout.onclick=()=>$('#sign-out').click();menu.append(logout);nav.append(menu);
+const accountPopover=el('div',null,'account-popover');
+Array.from(menu.children).filter(child=>child!==summary).forEach(child=>accountPopover.append(child));menu.append(accountPopover);
+document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.open=false});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menu.open){menu.open=false;summary.focus()}});
+function trialOffer(){const section=el('section',null,'trial-offer');const copy=el('div');copy.append(el('strong','$5 免费试用 · Test API'),el('p','仅限最低档 Test API，不适用于 Anthropic、OpenAI 或其他付费模型。'));
+const info=el('div',null,'trial-info');info.hidden=true;info.id='trial-explanation';info.append(el('strong','试用即将开放'),el('p','计划流程：领取 $5 试用额度 → 获取 Test Key → 在你的应用中测试 → 查看用量。后台尚未接入，当前不会发放额度或生成试用密钥。'));
+const button=action('了解 $5 试用',()=>{info.hidden=!info.hidden;button.setAttribute('aria-expanded',String(!info.hidden))});button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls',info.id);section.append(copy,button,info);return section}
 function showPage(page){activePage=page;usagePage=0;if(!me){openAuth(false);return}drawWorkspace()}
 function action(text,fn,klass=''){const b=el('button',text,klass);b.type='button';b.onclick=fn;return b}
 function block(title){const s=el('section',null,'card');s.append(el('h3',title));return s}
@@ -29,7 +36,7 @@ function drawWorkspace(){if(!workspaceData)return;const d=workspaceData;workspac
 if(activePage==='models'){
 workspace.append(el('p','MODEL MARKETPLACE','eyebrow'),el('h1','五类 API，按需选择。'),el('p','描述场景或查看商品支持的具体型号。当前结算仍为指定模型套餐；分类通用额度尚未开放。','workspace-intro'));
 const note=block('账户额度');note.append(el('p','共享美元钱包尚未开放。当前按已购买的指定模型套餐扣除 tokens，不存在模拟余额。'));const balances=el('div',null,'balances');d.balances.forEach(b=>{const item=el('div',null,'balance');item.append(el('small',b.model),el('strong',fmt(b.remaining_tokens)),el('small','tokens remaining'));balances.append(item)});if(!d.balances.length)balances.append(el('p','暂无已购套餐。获取 Key 不代表已获得可消费额度。'));note.append(balances);workspace.append(note);
-const market=el('div',null,'market-root');market.id='workspace-market';workspace.append(market);renderMarket(market);
+workspace.append(trialOffer());const market=el('div',null,'market-root');market.id='workspace-market';workspace.append(market);renderMarket(market);
 if(chosenModel){const c=block('接入 '+chosenModel);c.id='connection';c.append(el('p','API 地址'),el('code',location.origin+'/v1'),el('p','Model ID'),el('code',chosenModel));const existing=d.api_keys.filter(k=>k.status==='active'&&Array.isArray(k.models)&&k.models.length===1&&k.models[0]===chosenModel);if(existing.length){c.append(el('p','使用已保存的完整专用密钥，仅可调用此型号。'));existing.forEach(k=>c.append(el('p',`${k.label||'应用'} · ${k.prefix}…`)));c.append(action('管理或换发密钥',()=>showPage('keys')))}else c.append(el('p','仅授权此型号；调用时从对应模型套餐扣除额度。生成 Key 不会赠送额度。'),action('生成此模型专用 Key',guarded(()=>issueKey([chosenModel]))));workspace.append(c)}
 }else if(activePage==='semifly'){
 workspace.append(el('p','SEMIFLY MULTI-MODEL API','eyebrow'),el('h1','一把 Key，按场景选择模型。'),el('p','Semifly 多模型服务：选择使用场景，再确认模型与价格。与模型广场的专用 API 分开购买和计费。'));

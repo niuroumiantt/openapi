@@ -24,3 +24,18 @@
 @media(max-width:1099px){.market-root .catalogue,#workspace .market-root .catalogue{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:759px){.market-root .catalogue,#workspace .market-root .catalogue{grid-template-columns:repeat(2,minmax(0,1fr))}.scenario-search label{flex-basis:100%}.scenario-search input{width:auto;flex-basis:0}.market-root .catalogue>.card h3{min-height:0}#workspace h1{font-size:30px}}
 @media(max-width:420px){.market-root .catalogue,#workspace .market-root .catalogue{grid-template-columns:1fr}.scenario-search input{flex-basis:100%;width:100%}.scenario-search button{width:100%}}
+.profile-menu[open]{background:transparent;box-shadow:none}
+.profile-menu .account-popover{position:absolute;right:0;top:calc(100% + 8px);width:220px;max-width:calc(100vw - 36px);padding:8px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px #18252220;z-index:50}
+.profile-menu .account-popover button{display:block;width:100%;text-align:left;border-radius:7px;padding:10px 12px;margin:0}
+.profile-menu .account-popover button:hover{background:var(--paper)}
+.top{align-items:center}.top nav{align-items:center}
+.market-root .featured-catalogue,#workspace .market-root .featured-catalogue{grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 0 20px}
+.market-root .semifly-catalogue,#workspace .market-root .semifly-catalogue{grid-template-columns:repeat(3,minmax(0,1fr));margin:10px 0 16px}
+.market-group-title{font-size:14px;letter-spacing:.04em;margin:18px 0 0;color:var(--muted)}
+.market-root .featured-catalogue>.card{border-top:3px solid var(--leaf);padding:18px 20px}
+.market-root .catalogue>.card h3{min-height:0}
+.market-root .featured-catalogue>.card h3{font-size:27px}
+.trial-offer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;padding:14px 18px;margin:12px 0 16px;background:#e8efdf;border-radius:12px}
+.trial-offer strong{font-size:17px}.trial-offer p{margin:4px 0;font-size:13px;color:var(--muted)}
+.trial-info{flex-basis:100%;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:600px){.market-root .featured-catalogue,#workspace .market-root .featured-catalogue,.market-root .semifly-catalogue,#workspace .market-root .semifly-catalogue{grid-template-columns:1fr}.market-root .featured-catalogue>.card h3{font-size:23px}}
