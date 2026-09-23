@@ -1,1 +1,26 @@
 .market-root{display:block}.market-root .catalogue{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:24px 0}.market-root .card h3{font:500 25px/1.3 Georgia,serif;margin:0 0 12px;overflow-wrap:anywhere}.market-root .card p{color:var(--muted)}.market-root .card small{display:block;margin-bottom:15px}.market-root button{margin:8px 8px 0 0}.scenario-search{display:flex;flex-wrap:wrap;gap:12px;background:#e8efdf;padding:24px;border-radius:14px}.scenario-search label{flex-basis:100%;font-size:20px}.scenario-search input{font:inherit;flex:1;min-width:180px;max-width:none!important;border:1px solid var(--line);border-radius:8px;padding:13px}.scenario-search button{margin:0}.market-root>section:not([hidden]){margin-top:24px}.market-root>section>.card{margin:12px 0}@media(max-width:600px){.market-root .catalogue{grid-template-columns:1fr}.scenario-search{padding:18px}.scenario-search input{min-width:0;width:100%;flex-basis:100%}}
+.market-root .catalogue,#workspace .market-root .catalogue{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0}
+.market-root .catalogue>.card{min-width:0;padding:18px;display:flex;flex-direction:column;align-items:flex-start}
+.market-root .catalogue>.card h3{font-size:21px;line-height:1.25;margin-bottom:10px;min-height:53px}
+.market-root .catalogue>.card p{font-size:13px;line-height:1.5;margin:0 0 12px}
+.market-root .catalogue>.card small{font-size:12px;line-height:1.5;margin-bottom:12px}
+.market-root .catalogue>.card button,#workspace .market-root .catalogue>.card button{margin:auto 0 0;padding:9px 12px;font-size:13px;white-space:normal}
+.scenario-search{gap:10px;padding:16px 18px;border-radius:12px;align-items:center}
+.scenario-search label{flex-basis:auto;font-size:16px;white-space:nowrap}
+.scenario-search input{padding:10px 12px}
+#workspace{padding-top:24px;padding-bottom:28px}
+#workspace h1{font-size:34px;margin:6px 0 10px}
+#workspace>.eyebrow{margin-bottom:8px}
+#workspace>.workspace-intro{margin:0 0 16px}
+#workspace:has(#workspace-market)>.card{padding:14px 18px;margin:16px 0}
+#workspace:has(#workspace-market)>.card h3{font:500 18px/1.4 Georgia,serif}
+#workspace:has(#workspace-market)>.card>p{margin:6px 0;font-size:13px}
+#workspace:has(#workspace-market)>.card .balances{margin:0;gap:10px}
+#workspace:has(#workspace-market)>.card .balances>p{grid-column:1/-1;margin:4px 0;font-size:13px}
+#workspace:has(#workspace-market)>.card .balance{padding:12px 16px}
+#workspace:has(#workspace-market)>.card .balance strong{font-size:24px;margin:4px 0}
+.models{padding-top:40px;padding-bottom:40px}
+.models .section-head{margin-bottom:22px}
+@media(max-width:1099px){.market-root .catalogue,#workspace .market-root .catalogue{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:759px){.market-root .catalogue,#workspace .market-root .catalogue{grid-template-columns:repeat(2,minmax(0,1fr))}.scenario-search label{flex-basis:100%}.scenario-search input{width:auto;flex-basis:0}.market-root .catalogue>.card h3{min-height:0}#workspace h1{font-size:30px}}
+@media(max-width:420px){.market-root .catalogue,#workspace .market-root .catalogue{grid-template-columns:1fr}.scenario-search input{flex-basis:100%;width:100%}.scenario-search button{width:100%}}
