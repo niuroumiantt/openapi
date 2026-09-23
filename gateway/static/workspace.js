@@ -5,8 +5,13 @@ const workspace=document.createElement('section');workspace.id='workspace';works
 $('main').prepend(workspace);
 const nav=$('.top nav');
 const modelNav=el('button','模型广场','quiet'),keyNav=el('button','Semifly API','quiet');
-modelNav.onclick=()=>showPage('models');keyNav.onclick=()=>showPage('semifly');
+modelNav.onclick=()=>me?showPage('models'):$('#models').scrollIntoView();keyNav.onclick=()=>showPage('semifly');
 nav.querySelectorAll('a').forEach(a=>a.remove());nav.prepend(modelNav,keyNav);
+keyNav.hidden=true;
+$('#hero h1').textContent='选对模型，清楚付费。';
+$('#hero .lede').textContent='五类 API，一个模型广场。直接选择商品，或描述使用场景，查找适合的模型。';
+$('#models h2').textContent='五类 API，按需选择。';
+$('#models .section-head>p').textContent='场景帮助选模型，不额外收费。未开放的商品不接受付款。';
 const menu=document.createElement('details');menu.className='profile-menu';menu.hidden=true;
 const summary=el('summary','账户');menu.append(summary);
 for(const [name,page] of [['个人信息与安全','account'],['我的密钥','keys'],['用量记录','usage'],['订单与套餐','orders']]){const b=el('button',name,'quiet');b.onclick=()=>{menu.open=false;showPage(page)};menu.append(b)}
@@ -22,9 +27,9 @@ async function issueKey(models){if(!models.length){toast('暂无可接入模型'
 function guarded(fn){return async()=>{try{await fn()}catch(e){toast(e.message)}}}
 function drawWorkspace(){if(!workspaceData)return;const d=workspaceData;workspace.replaceChildren();summary.textContent=(me?.username||'账户')+' · 个人中心';modelNav.classList.toggle('selected',activePage==='models');keyNav.classList.toggle('selected',activePage==='semifly');
 if(activePage==='models'){
-workspace.append(el('p','DEDICATED MODEL API','eyebrow'),el('h1','模型广场 · 专用 API'),el('p','选择指定型号、购买对应套餐、获取仅限该型号的 Semifly Key。上游原厂凭据不会交付给客户。','workspace-intro'));
+workspace.append(el('p','MODEL MARKETPLACE','eyebrow'),el('h1','五类 API，按需选择。'),el('p','描述场景或查看商品支持的具体型号。当前结算仍为指定模型套餐；分类通用额度尚未开放。','workspace-intro'));
 const note=block('账户额度');note.append(el('p','共享美元钱包尚未开放。当前按已购买的指定模型套餐扣除 tokens，不存在模拟余额。'));const balances=el('div',null,'balances');d.balances.forEach(b=>{const item=el('div',null,'balance');item.append(el('small',b.model),el('strong',fmt(b.remaining_tokens)),el('small','tokens remaining'));balances.append(item)});if(!d.balances.length)balances.append(el('p','暂无已购套餐。获取 Key 不代表已获得可消费额度。'));note.append(balances);workspace.append(note);
-const search=document.createElement('input');search.placeholder='搜索模型';search.setAttribute('aria-label','搜索模型');const grid=el('div',null,'catalogue');const list=()=>{grid.replaceChildren();availableModels.filter(m=>m.id.toLowerCase().includes(search.value.toLowerCase())).forEach(m=>{const card=block(m.id),offers=products.filter(p=>p.model===m.id);card.append(el('small','已配置路由 · 实际可用性以调用结果为准'));if(offers.length)offers.forEach(p=>card.append(el('p',`${fmt(p.token_amount)} tokens · ${money(p)}`),action('购买此套餐',()=>checkout(p.id))));else card.append(el('p','暂无在售套餐，暂不接受该模型付款。'));card.append(action('获取接入配置 →',()=>{chosenModel=m.id;drawWorkspace();$('#connection').scrollIntoView({block:'center'})}));grid.append(card)});if(!grid.childElementCount)grid.append(el('p','暂无匹配模型。'))};search.oninput=list;workspace.append(search,grid);list();
+const market=el('div',null,'market-root');market.id='workspace-market';workspace.append(market);renderMarket(market);
 if(chosenModel){const c=block('接入 '+chosenModel);c.id='connection';c.append(el('p','API 地址'),el('code',location.origin+'/v1'),el('p','Model ID'),el('code',chosenModel));const existing=d.api_keys.filter(k=>k.status==='active'&&Array.isArray(k.models)&&k.models.length===1&&k.models[0]===chosenModel);if(existing.length){c.append(el('p','使用已保存的完整专用密钥，仅可调用此型号。'));existing.forEach(k=>c.append(el('p',`${k.label||'应用'} · ${k.prefix}…`)));c.append(action('管理或换发密钥',()=>showPage('keys')))}else c.append(el('p','仅授权此型号；调用时从对应模型套餐扣除额度。生成 Key 不会赠送额度。'),action('生成此模型专用 Key',guarded(()=>issueKey([chosenModel]))));workspace.append(c)}
 }else if(activePage==='semifly'){
 workspace.append(el('p','SEMIFLY MULTI-MODEL API','eyebrow'),el('h1','一把 Key，按场景选择模型。'),el('p','Semifly 多模型服务：选择使用场景，再确认模型与价格。与模型广场的专用 API 分开购买和计费。'));

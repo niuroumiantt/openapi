@@ -23,6 +23,7 @@ from .db import KeyStore
 from .mailer import Mailer
 from .platform import PlatformStore
 from .upstreams import Catalogue
+from .storefront import storefront
 
 DB_PATH = os.environ.get("GATEWAY_DB", "keys.sqlite3")
 ADMIN_TOKEN = os.environ.get("GATEWAY_ADMIN_TOKEN", "")   # empty = admin only from localhost
@@ -276,6 +277,11 @@ async def confirm_password_reset(request: Request):
 async def customer_catalogue():
     """Public products only; prices are read from the server-side product catalogue."""
     return platform.catalogue()
+
+
+@app.get("/portal/storefront")
+async def public_storefront():
+    return storefront(catalogue, platform.catalogue())
 
 
 @app.get("/portal/dashboard")
